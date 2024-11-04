@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "your-terraform-state-bucket"
+    bucket = "wideops-project-bucket"
     prefix = "mongodb-replica-set"
   }
 
@@ -9,14 +9,42 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 4.0"
     }
+
+     random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
   }
+  
 
   required_version = ">= 1.0.0"
 }
 
-provider "google" {
-  project     = "my-project-id"
-  region      = var.region
-  credintials = "./gcp-project/keys.json"
+resource "random_integer" "int" {
+  min = 100
+  max = 1000000
 }
 
+provider "google" {
+  project     = "gcp-mongoxnodeapp-project"
+  region      = var.region
+}
+
+module "common" {
+  source = "./modules/common"
+
+  region = var.region
+  machine_type = "e2-medium"
+
+}
+
+module "mongodb" {
+  source = "./modules/mongodb"
+
+  region         = var.region
+  machine_type   = "e2-medium"
+  bastion_ip     = module.common.bastion_host
+  private_subnet = module.common.private_subnet_name
+  vpc_name       = module.common.vpc_name
+
+}
