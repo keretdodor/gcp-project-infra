@@ -30,12 +30,18 @@ resource "google_compute_router" "nat_router" {
 }
 
 resource "google_compute_router_nat" "nat_gateway" {
-  name                               = "nat-gateway"
-  router                             = google_compute_router.nat_router.name
-  region                             = var.region
-  nat_ip_allocate_option             = "AUTO_ONLY"
-  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  name                   = "nat-gateway"
+  router                 = google_compute_router.nat_router.name
+  region                 = var.region
+  nat_ip_allocate_option = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
+
+   subnetwork {
+    name                    = google_compute_subnetwork.private_subnet.name
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
 }
+
 
 #Bastion Host
 
@@ -58,8 +64,24 @@ resource "google_compute_instance" "bastion_host" {
 
     }
   }
+   metadata = {
+    ssh-keys = "keretdodorc:${file("/home/keretdodor/Desktop/gcp-project/bastion_host.pub")}"
+   }
+   
+    provisioner "file" {
+    source      = "/home/keretdodor/Desktop/gcp-project/mongo_key.pem"  
+    destination = "/home/keretdodorc/mongo_key.pem"      
+    connection {
+      type        = "ssh"
+      user        = "keretdodorc"
+      private_key = file("/home/keretdodor/Desktop/gcp-project/bastion_host.pem")
+      host        = self.network_interface[0].access_config[0].nat_ip
+    }
+  }
+
     tags = ["allow-ssh-http"] 
 }
+
 
 resource "google_compute_firewall" "allow_ssh_http" {
   name    = "allow-ssh-http"

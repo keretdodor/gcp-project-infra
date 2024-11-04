@@ -8,7 +8,7 @@ variable "machine_type" {
    type        = string
 }
 
-variable "private_subnet_name" {
+variable "private_subnet" {
    description = "private subnet's name"
    type        = string
 }

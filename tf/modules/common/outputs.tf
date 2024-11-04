@@ -9,7 +9,7 @@ output "private_subnet_name" {
 }
 
 output "bastion_host" {
-  value = network_interface.0.access_config.0.nat_ip
+  value = google_compute_instance.bastion_host.network_interface[0].network_ip
   description = "The table's name"
 }
 
