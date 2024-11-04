@@ -16,7 +16,7 @@ terraform {
 
 provider "google" {
   project     = "my-project-id"
-  region      = "us-central1"
-  credintials = "./gcp-project-infra/keys.json"
+  region      = var.region
+  credintials = "./gcp-project/keys.json"
 }
 
