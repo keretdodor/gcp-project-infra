@@ -14,7 +14,7 @@ resource "google_compute_firewall" "bastion_ssh_firewall" {
     ports    = ["22"]
   }
 
-  source_ranges = [var.bastion_ip]  
+  source_ranges = [var.bastion_prv_ip]  
   target_tags   = ["mongodb"]
 }
 
@@ -58,47 +58,73 @@ resource "google_compute_instance" "mongodb_instances" {
    metadata = {
     ssh-keys = "keretdodorc:${file("/home/keretdodor/Desktop/gcp-project/mongo_key.pub")}"
     startup-script = <<-EOT
-      #!/bin/bash
-      
-      sudo apt update
-      sudo apt-get install gnupg curl
-      curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
-      sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg \
-      --dearmor
-      echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
-      sudo apt-get install -y mongodb-org
-      sudo systemctl start mongod
+    #!/bin/bash
+            
+    sudo apt update
+    install gnupg2 wget
+    wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+    
+    echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+    
+    sudo apt update
+    sudo apt-get install -y mongodb-org
+    
+    sudo systemctl start mongod
+    sudo systemctl enable mongod
+    sudo systemctl status mongod
+    
+    sudo systemctl stop mongod
+    
+    echo 'replication:
+       replSetName: "rsu"' | sudo tee -a /etc/mongod.conf
+     
+    sudo sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
 
+    sudo systemctl restart mongod
 
-      echo 'replication:
-        replSetName: "rsu"' | sudo tee -a /etc/mongod.conf
-      
-      sudo sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
-
-      sudo systemctl restart mongod
     EOT
   }
 
   tags = ["mongodb", "${count.index == 0 ? "primary" : count.index == 1 ? "secondary" : "arbiter"}"]
+
+  depends_on = [var.nat_router_id]
+
     }
 
 resource "null_resource" "initiate_replica_set" {
+  provisioner "file" {
+      source      = "/home/keretdodor/Desktop/gcp-project/gcp-project-infra/tf/modules/mongodb/initiate-mongo.sh"
+      destination = "/tmp/initiate-mongo.sh"
+
+  connection {
+      type        = "ssh"
+      user        = "keretdodorc"
+      agent       = "false"
+      port        = 22
+      private_key = file("/home/keretdodor/Desktop/gcp-project/bastion_host.pem")
+      host        = var.bastion_pub_ip
+    }
+  }
 
   provisioner "remote-exec" {
-    inline = [
-
-      "chmod 600 mongo_key.pem",
-      "ssh -i mongo_key.pem keretdodorc@${google_compute_instance.mongodb_instances[0].network_interface[0].network_ip}", 
-      "mongo --eval 'rs.initiate()'",
-      "mongo --eval 'rs.add(\"${google_compute_instance.mongodb_instances[1].network_interface[0].network_ip}\")'",
-      "mongo --eval 'rs.addArb(\"${google_compute_instance.mongodb_instances[2].network_interface[0].network_ip}\")'"
-    ]
-
     connection {
       type        = "ssh"
       user        = "keretdodorc"
+      agent       = "false"
+      port        = 22
       private_key = file("/home/keretdodor/Desktop/gcp-project/bastion_host.pem")
-      host        = var.bastion_ip
+      host        = var.bastion_pub_ip
     }
+   
+    inline = [
+
+      "chmod +x /tmp/initiate-mongo.sh",
+      "/tmp/initiate-mongo.sh ${google_compute_instance.mongodb_instances[0].network_interface[0].network_ip} ${google_compute_instance.mongodb_instances[1].network_interface[0].network_ip} ${google_compute_instance.mongodb_instances[2].network_interface[0].network_ip}",
+
+    ]
+
   }
-}
+
+  depends_on = [google_compute_instance.mongodb_instances]
+  }
+

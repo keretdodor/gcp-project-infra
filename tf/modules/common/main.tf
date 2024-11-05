@@ -1,28 +1,46 @@
-# The VPC configuration, three private subnets and one public for the bastion host
+###################################################################################
+# The VPC configuration, two private subnets and one public for the bastion host
+###################################################################################
 
 resource "google_compute_network" "gcp-vpc" {
   name = "mongodb-vpc"
   auto_create_subnetworks = false
 }
 
-resource "google_compute_subnetwork" "private_subnet" {
+resource "google_compute_subnetwork" "mongo_prv_subnet" {
   name          = "private-subnet"
   ip_cidr_range = "10.0.0.0/24"
   region        = var.region
   network       = google_compute_network.gcp-vpc.id
   private_ip_google_access = true 
 }
+resource "google_compute_subnetwork" "k8s_prv_sub" {
+  name                     = "k8s_prv_sub"
+  ip_cidr_range            = "10.0.1.0/24"
+  region                   = "us-central1"
+  network                  = google_compute_network.gcp-vpc.id
+  private_ip_google_access = true
+
+  secondary_ip_range {
+    range_name    = "k8s-pod-range"
+    ip_cidr_range = "10.0.2.0/25"
+  }
+  secondary_ip_range {
+    range_name    = "k8s-service-range"
+    ip_cidr_range = "10.0.2.128/25"
+  }
+}
 
 resource "google_compute_subnetwork" "public_subnet" {
   name          = "public-subnet"
-  ip_cidr_range = "10.0.1.0/24"
+  ip_cidr_range = "10.0.2.0/24"
   region        = var.region
   network       = google_compute_network.gcp-vpc.id
   private_ip_google_access = false
 }
-
-# NAT Gateway 
-
+###########################################################################
+#                               NAT Gateway 
+###########################################################################
 resource "google_compute_router" "nat_router" {
   name    = "nat-router"
   network = google_compute_network.gcp-vpc.name
@@ -33,17 +51,33 @@ resource "google_compute_router_nat" "nat_gateway" {
   name                   = "nat-gateway"
   router                 = google_compute_router.nat_router.name
   region                 = var.region
-  nat_ip_allocate_option = "AUTO_ONLY"
+  nat_ip_allocate_option = "MANUAL_ONLY"
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
 
-   subnetwork {
-    name                    = google_compute_subnetwork.private_subnet.name
+  subnetwork {
+    name                    = google_compute_subnetwork.mongo_prv_subnet.name
     source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
   }
+
+  subnetwork {
+    name                    = google_compute_subnetwork.k8s_prv_sub.name
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
+  
+  nat_ips = [google_compute_address.nat.self_link]
+
 }
 
+resource "google_compute_address" "nat" {
+  name         = "nat"
+  address_type = "EXTERNAL"
+  network_tier = "PREMIUM"
 
-#Bastion Host
+}
+
+###########################################################################
+#                               Bastion Host 
+###########################################################################
 
 resource "google_compute_instance" "bastion_host" {
   name         = "bastion-host"

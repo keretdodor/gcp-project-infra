@@ -13,7 +13,12 @@ variable "private_subnet" {
    type        = string
 }
 
-variable "bastion_ip" {
+variable "bastion_prv_ip" {
+   description = "Bastion's host ip's"
+   type        = string
+}
+
+variable "bastion_pub_ip" {
    description = "Bastion's host ip's"
    type        = string
 }
@@ -23,3 +28,7 @@ variable "vpc_name" {
    type        = string
 }
 
+variable "nat_router_id" {
+  description = "ID of the NAT router"
+  type        = string
+}

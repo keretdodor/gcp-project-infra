@@ -43,8 +43,10 @@ module "mongodb" {
 
   region         = var.region
   machine_type   = "e2-medium"
-  bastion_ip     = module.common.bastion_host
+  bastion_prv_ip = module.common.bastion_prv_ip
+  bastion_pub_ip = module.common.bastion_pub_ip
   private_subnet = module.common.private_subnet_name
   vpc_name       = module.common.vpc_name
+  nat_router_id  = module.common.nat_router_id
 
 }
