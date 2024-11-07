@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nodeapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true" 
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: external-nginx
+  rules:
+    - host: forthebecks.magvonim.site  
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nodeapp-service  
+                port:
+                  number: 80 
+  tls:
+    - hosts:
+        - magvonim.site
+      secretName: nodeapp-tls
