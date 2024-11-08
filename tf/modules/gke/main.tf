@@ -8,7 +8,7 @@ resource "google_container_cluster" "nodeapp" {
   logging_service          = "logging.googleapis.com/kubernetes"
   monitoring_service       = "monitoring.googleapis.com/kubernetes"
   networking_mode          = "VPC_NATIVE"
-  default_max_pods_per_node = 8
+  default_max_pods_per_node = 30
 
 
   node_locations = data.google_compute_zones.available.names
