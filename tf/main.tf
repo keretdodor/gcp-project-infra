@@ -45,8 +45,20 @@ module "mongodb" {
   machine_type   = "e2-medium"
   bastion_prv_ip = module.common.bastion_prv_ip
   bastion_pub_ip = module.common.bastion_pub_ip
-  private_subnet = module.common.private_subnet_name
+  private_subnet = module.common.mongo_prv_sub
   vpc_name       = module.common.vpc_name
   nat_router_id  = module.common.nat_router_id
 
+}
+
+module "gke" {
+  source = "./modules/gke"
+
+  region             = var.region
+  machine_type       = "e2-medium"
+  pod_range_name     = module.common.pod_range_name
+  service_range_name = module.common.service_range_name
+  vpc_name           = module.common.vpc_name
+  private_subnet     = module.common.k8s_prv_sub
+  #nat_router_id      = module.common.nat_router_id
 }
