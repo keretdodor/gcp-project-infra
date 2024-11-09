@@ -91,7 +91,19 @@ resource "google_compute_instance" "mongodb_instances" {
 
     }
 
+resource "template_file" "env_file" {
+  template = <<-EOT
+    mongodb://${join(":27017,", google_compute_instance.mongodb_instances[*].network_interface[0].network_ip)}/mydb?replicaSet=rsu
+  EOT
+}
+
+resource "local_file" "app_env" {
+  content  = template_file.env_file.rendered
+  filename = "/home/keretdodor/Desktop/gcp-project/configmapenv.txt"
+}
+
 resource "null_resource" "initiate_replica_set" {
+
   provisioner "file" {
       source      = "/home/keretdodor/Desktop/gcp-project/gcp-project-infra/tf/modules/mongodb/initiate-mongo.sh"
       destination = "/tmp/initiate-mongo.sh"
@@ -125,6 +137,7 @@ resource "null_resource" "initiate_replica_set" {
 
   }
 
-  depends_on = [google_compute_instance.mongodb_instances]
+  depends_on = [google_compute_instance.mongodb_instances, google_compute_firewall.bastion_ssh_firewall]
+
   }
 
