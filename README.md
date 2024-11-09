@@ -70,8 +70,43 @@ I also used **two provisioner** to transfer the private key of the MongoDB repli
 
 ### **`google_container_cluster`**:
 
-The cluster is set to be highly available, it will be deployed on two different zones configured with data sources. I added a fluentd pod for future logging and, i turned on the horizontal poding autoscaling option as it is not available by default. The control plane is set to the regular release version. 
+The cluster is set to be highly available, the cluster will be deployed on two different zones configured with data sources. I added a fluentd pod for future logging and, i turned on the horizontal poding autoscaling option as it is not available by default. The control plane is set to the regular release version. 
 
-### **`google_container_node_pool`**
+### **`google_container_node_pool`**:
 
-I created two node pools
+I created two node pools, one is **`general`**: containing two persistent nodes, on two different zones, ensuring reliablity and fault tolerant architecture.
+Another node pool **`spot`**: with an auto scaling of 0 to 3, ensuring high availablity with lower cost and since there is already a persistent node pool, it is possible to execute.
+
+All node pools configured with a key and a a firewall rule for the bastion host on port 22.
+
+## The MongoDB Replica Set - /modules/mongodb
+
+For the MongoDB replica set, i created two firewall rules, one is on port 22 for the bastion host privtate ip and another for the MongoDB itself on port 27017 accepting only traffic from inside the VPC on the range of 10.0.0.0/16
+
+I created a **`google_compute_instance`** resource with a **`count=3`** (one primary, one secondary and one arbiter), each replica deployed on a different zone with the **`google_compute_zones`** data source. The instances deployed on a private subnet, with a unique key pair.
+
+### **`startup-mongo.sh`**:
+
+this script downloads MongoDB with the **`wget`** and command and **`apt`** . after MongoDB is downloaded on all 3 instances, the script echo the replica set's name to each instance making sure they are all under the same replica set with the **`tee -a`** , after that i use the **`sed -i`** command to replace the bindIp.
+
+### resource  **`template_file`** and resource **`local_file`**:
+
+Using the `join()` function, I created a template that generates the environment variable the Node app needs to connect to the MongoDB replica set as a single entity.
+
+### resource **`null_resource`**
+
+In this null resource, i created two provisioners. one to transer a local script to the Bastion Host and another one to remote exec it, here is how the script goes:
+
+-  ### `initiate-mongo.sh`:
+
+    Because the MongoDB cluster is in a private subnet we will need to SSH to it from the Bastion Host, I gave the right permissions to the MongoDB key and SSH to the one we set as primary before. to initiate the database, I firstly ran the `rs.initiate()` command.
+    
+    then set the RWConcern to 1 with w: "majority to allow balance performance and data consistency between the replica set.
+
+    i then added the Secondary member to the replica set with the `rs.add()` command.
+
+    While creating the script, i realized that i have a problem setting the primary insatnce as the host of the replica set so i reconfigured the replica set and after that added the Arbiter with the `rs.addArb()` command
+
+At the end the MongoDB Replica Set should look like this
+
+![Alt text](/home/keretdodor/Pictures/Screenshots/primary.png)
