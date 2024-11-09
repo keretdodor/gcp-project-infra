@@ -15,7 +15,7 @@ resource "google_compute_subnetwork" "mongo_prv_subnet" {
   private_ip_google_access = true 
 }
 resource "google_compute_subnetwork" "k8s_prv_sub" {
-  name                     = "k8s_prv_sub"
+  name                     = "k8s-prv-sub"
   ip_cidr_range            = "10.0.1.0/24"
   region                   = "us-central1"
   network                  = google_compute_network.gcp-vpc.id
@@ -26,21 +26,23 @@ resource "google_compute_subnetwork" "k8s_prv_sub" {
     ip_cidr_range = "10.0.2.0/25"
   }
   secondary_ip_range {
-    range_name    = "k8s-service-range"
+    range_name    = "k8s-service-range" 
     ip_cidr_range = "10.0.2.128/25"
   }
 }
 
 resource "google_compute_subnetwork" "public_subnet" {
   name          = "public-subnet"
-  ip_cidr_range = "10.0.2.0/24"
+  ip_cidr_range = "10.0.3.0/24"
   region        = var.region
   network       = google_compute_network.gcp-vpc.id
   private_ip_google_access = false
 }
+
 ###########################################################################
 #                               NAT Gateway 
 ###########################################################################
+
 resource "google_compute_router" "nat_router" {
   name    = "nat-router"
   network = google_compute_network.gcp-vpc.name
@@ -130,3 +132,40 @@ resource "google_compute_firewall" "allow_ssh_http" {
 
   target_tags = ["allow-ssh-http"] 
 }
+
+###########################################################################
+#                               Demo nodeapp
+###########################################################################
+ 
+data "archive_file" "example" {
+  type        = "zip"
+  source_dir  = "/home/keretdodor/Desktop/gcp-project/node"  
+  output_path = "./node.zip"
+}
+
+resource "google_compute_instance" "node_host" {
+  name         = "node-host"
+  machine_type = var.machine_type 
+  zone         = data.google_compute_zones.available.names[0]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11" 
+    }
+  }
+
+  network_interface {
+    network    = google_compute_network.gcp-vpc.name
+    subnetwork = google_compute_subnetwork.public_subnet.name
+
+    access_config { 
+
+    }
+  }
+   metadata = {
+    ssh-keys = "keretdodorc:${file("/home/keretdodor/Desktop/gcp-project/bastion_host.pub")}"
+   }
+
+    tags = ["allow-ssh-http"] 
+}
+ 

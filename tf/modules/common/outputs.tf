@@ -3,12 +3,12 @@ output "vpc_name" {
   description = "The table's name"
 }
 
-output "private_subnet_name" {
+output "mongo_prv_sub" {
   value = google_compute_subnetwork.mongo_prv_subnet.name
   description = "The table's name"
 }
 
-output "private_subnet_name" {
+output "k8s_prv_sub" {
   value = google_compute_subnetwork.k8s_prv_sub.name
   description = "The table's name"
 }
@@ -25,4 +25,12 @@ output "bastion_pub_ip" {
 
 output "nat_router_id" {
   value = google_compute_router.nat_router.id
+}
+
+output "pod_range_name" {
+  value = google_compute_subnetwork.k8s_prv_sub.secondary_ip_range[0].range_name
+}
+
+output "service_range_name" {
+  value = google_compute_subnetwork.k8s_prv_sub.secondary_ip_range[1].range_name
 }
