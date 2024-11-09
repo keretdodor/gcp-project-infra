@@ -60,7 +60,7 @@ module "gke" {
   service_range_name = module.common.service_range_name
   vpc_name           = module.common.vpc_name
   private_subnet     = module.common.k8s_prv_sub
-  bastion_pub_ip = module.common.bastion_pub_ip
+  bastion_prv_ip = module.common.bastion_prv_ip
   #nat_router_id      = module.common.nat_router_id
 }
 

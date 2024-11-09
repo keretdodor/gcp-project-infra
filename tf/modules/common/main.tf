@@ -139,7 +139,7 @@ resource "google_compute_firewall" "allow_ssh_http" {
  
 data "archive_file" "example" {
   type        = "zip"
-  source_dir  = "/home/keretdodor/Desktop/gcp-project/node"  
+  source_dir  = "/home/keretdodor/Desktop/gcp-project/gcp-project-infra/node"  
   output_path = "./node.zip"
 }
 

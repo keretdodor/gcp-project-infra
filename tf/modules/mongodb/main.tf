@@ -93,7 +93,7 @@ resource "google_compute_instance" "mongodb_instances" {
 
 resource "template_file" "env_file" {
   template = <<-EOT
-    mongodb://${join(":27017,", google_compute_instance.mongodb_instances[*].network_interface[0].network_ip)}/mydb?replicaSet=rsu
+    mongodb://${join(":27017,", google_compute_instance.mongodb_instances[*].network_interface[0].network_ip)}:27017/mydb?replicaSet=rsu
   EOT
 }
 

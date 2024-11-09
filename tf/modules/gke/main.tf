@@ -1,6 +1,6 @@
 resource "google_container_cluster" "nodeapp" {
   name                     = "nodeapp"
-  location                 = data.google_compute_zones[0].available.names
+  location                 = data.google_compute_zones.available.names[0]
   remove_default_node_pool = true
   initial_node_count       = 1
   network                  = var.vpc_name
@@ -10,7 +10,7 @@ resource "google_container_cluster" "nodeapp" {
   default_max_pods_per_node = 30
 
 
-  node_locations = data.google_compute_zones[1].available.names
+  node_locations = [data.google_compute_zones.available.names[1]]
 
   addons_config {
     http_load_balancing {
@@ -43,9 +43,6 @@ resource "google_container_node_pool" "general" {
   cluster    = google_container_cluster.nodeapp.id
   node_count = 1
 
-  metadata = {
-      ssh-keys = "USERNAME:${file("/home/keretdodor/Desktop/gcp-project/gke-key.pub")}"
-    }
   management {
     auto_repair  = true
     auto_upgrade = true
@@ -59,6 +56,9 @@ resource "google_container_node_pool" "general" {
     labels = {
       role = "general"
     }
+    metadata = {
+      ssh-keys = "keretdodorc:${file("/home/keretdodor/Desktop/gcp-project/gke-key.pub")}"
+    }
   }
 
   
@@ -67,10 +67,6 @@ resource "google_container_node_pool" "general" {
 resource "google_container_node_pool" "spot" {
   name    = "spot"
   cluster = google_container_cluster.nodeapp.id
-
-  metadata = {
-    ssh-keys = "USERNAME:${file("/home/keretdodor/Desktop/gcp-project/gke-key.pub")}"
-  }
 
   management {
     auto_repair  = true
@@ -90,14 +86,16 @@ resource "google_container_node_pool" "spot" {
     labels = {
       team = "spot"
     }
-
+  metadata = {
+    ssh-keys = "keretdodorc:${file("/home/keretdodor/Desktop/gcp-project/gke-key.pub")}"
+  }
   }
 }
 
 
 
-resource "google_compute_firewall" "bastion_ssh_firewall" {
-  name    = "bastion-ssh-access"
+resource "google_compute_firewall" "gke_firewall" {
+  name    = "gke-firewall"
   network = var.vpc_name
 
   allow {
