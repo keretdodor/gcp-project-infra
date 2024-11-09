@@ -20,5 +20,5 @@ spec:
                   number: 80 
   tls:
     - hosts:
-        - magvonim.site
+        - forthebecks.magvonim.site
       secretName: nodeapp-tls

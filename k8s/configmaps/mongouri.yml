@@ -3,5 +3,4 @@ kind: ConfigMap
 metadata:
   name: mongodb-config
 data:
-  MONGO_URI: "mongodb://10.0.0.3:27017,10.0.0.4:27017,10.0.0.2:27017/mydb?replicaSet=rsu
-"
+  MONGO_URI: "mongodb://10.0.0.4:27017,10.0.0.3:27017,10.0.0.2:27017/mydb?replicaSet=rsu"
