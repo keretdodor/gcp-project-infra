@@ -107,6 +107,8 @@ In this null resource, i created two provisioners. one to transer a local script
 
     While creating the script, i realized that i have a problem setting the primary insatnce as the host of the replica set so i reconfigured the replica set and after that added the Arbiter with the `rs.addArb()` command
 
-At the end the MongoDB Replica Set should look like this
+At the end the MongoDB Replica Set should look like this:
 
-![Alt text](/home/keretdodor/Pictures/Screenshots/primary.png)
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
