@@ -1,17 +1,16 @@
 resource "google_container_cluster" "nodeapp" {
   name                     = "nodeapp"
-  location                 = var.region
+  location                 = data.google_compute_zones[0].available.names
   remove_default_node_pool = true
   initial_node_count       = 1
   network                  = var.vpc_name
   subnetwork               = var.private_subnet
   logging_service          = "logging.googleapis.com/kubernetes"
-  monitoring_service       = "monitoring.googleapis.com/kubernetes"
   networking_mode          = "VPC_NATIVE"
   default_max_pods_per_node = 30
 
 
-  node_locations = data.google_compute_zones.available.names
+  node_locations = data.google_compute_zones[1].available.names
 
   addons_config {
     http_load_balancing {
@@ -44,12 +43,16 @@ resource "google_container_node_pool" "general" {
   cluster    = google_container_cluster.nodeapp.id
   node_count = 1
 
+  metadata = {
+      ssh-keys = "USERNAME:${file("/home/keretdodor/Desktop/gcp-project/gke-key.pub")}"
+    }
   management {
     auto_repair  = true
     auto_upgrade = true
   }
 
   node_config {
+    tags = ["gke-nodes"]  
     preemptible  = false
     machine_type = "e2-medium"
 
@@ -57,11 +60,17 @@ resource "google_container_node_pool" "general" {
       role = "general"
     }
   }
+
+  
 }
 
 resource "google_container_node_pool" "spot" {
   name    = "spot"
   cluster = google_container_cluster.nodeapp.id
+
+  metadata = {
+    ssh-keys = "USERNAME:${file("/home/keretdodor/Desktop/gcp-project/gke-key.pub")}"
+  }
 
   management {
     auto_repair  = true
@@ -74,6 +83,7 @@ resource "google_container_node_pool" "spot" {
   }
 
   node_config {
+    tags = ["gke-nodes"]  
     preemptible  = true
     machine_type = "e2-medium"
 
@@ -83,3 +93,20 @@ resource "google_container_node_pool" "spot" {
 
   }
 }
+
+
+
+resource "google_compute_firewall" "bastion_ssh_firewall" {
+  name    = "bastion-ssh-access"
+  network = var.vpc_name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = [var.bastion_prv_ip]
+  target_tags   = ["gke-nodes"] 
+}
+
+

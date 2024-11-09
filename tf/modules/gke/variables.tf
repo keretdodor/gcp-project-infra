@@ -27,3 +27,8 @@ variable "service_range_name" {
   description = "The name of the secondary IP range for services."
   type        = string
 }
+
+variable "bastion_prv_ip" {
+   description = "Bastion's host ip's"
+   type        = string
+}
