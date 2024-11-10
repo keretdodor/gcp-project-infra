@@ -107,8 +107,8 @@ resource "google_compute_firewall" "gke_firewall" {
   target_tags   = ["gke-nodes"] 
 }
 
-resource "google_compute_firewall" "gke_firewall" {
-  name    = "gke-firewall"
+resource "google_compute_firewall" "gke_http_firewall" {
+  name    = "gke-http-firewall"
   network = var.vpc_name
 
   allow {
@@ -116,12 +116,12 @@ resource "google_compute_firewall" "gke_firewall" {
     ports    = ["80"]
   }
 
-  source_ranges = [0.0.0.0]
+  source_ranges = ["0.0.0.0/0"]
   target_tags   = ["gke-nodes"] 
 }
 
-resource "google_compute_firewall" "gke_firewall" {
-  name    = "gke-firewall"
+resource "google_compute_firewall" "gke_https_firewall" {
+  name    = "gke-https-firewall"
   network = var.vpc_name
 
   allow {
@@ -129,7 +129,7 @@ resource "google_compute_firewall" "gke_firewall" {
     ports    = ["433"]
   }
 
-  source_ranges = [0.0.0.0]
+  source_ranges = ["0.0.0.0/0"]
   target_tags   = ["gke-nodes"] 
 }
 
