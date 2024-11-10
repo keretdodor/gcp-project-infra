@@ -112,3 +112,73 @@ At the end the MongoDB Replica Set should look like this:
 ![alt text](image.png)
 ![alt text](image-1.png)
 ![alt text](image-2.png)
+
+
+*In production, we will set a username and a password for the database*
+
+
+## The Node App - /node
+
+### **`nodeapp.js`**:
+
+I added few additional steps to the nodeapp.js:
+1. I created an enviroment variable that the user add the docker image/k8s deployment with. This env var contains the IP's of all the replica set members, the selected database the app will send data to and the name of the replicaset itself
+2.  I added a `/healthy` function that returns OK if the status code is <span style="color: green;">200</span> . this function will be later used by the nodeapp deployment's  **liveness probe** to ensure repeated if the pods are dead or alive.
+3. I added a `/ready` fucntion that returns Ready if the status code is <span style="color: green;">200</span> and Not ready if the status code is <span style="color: red;">500</span>. this function will be later used by the **readiness probe** to check if a pod is ready to accept data or not
+
+### **`Dockerfile`**:
+
+The docker file i created is running on a node.js environment, it is exposed to **port 3000** and waits to get a env var from the user (MONGO_URI)
+
+## The GKE Cluster - /k8s
+
+### **`configmaps/mongouri.yml`**:
+
+To store variables that are not confidential we will use a configMap. This configMap stores the value of the MongoDB replicaset IPs, the database name, and the replicaset name.
+
+
+### **`secrets/tlscert.yml`**:
+
+To store variables that are confidential such as credentials or keys we will use a kind called secret, the values in a secret must be **base64 coded** before being provided to the yaml file. this file contains the tls certification and the tls key, both base64 coded.
+
+### **`deployments/depl-nodeapp.yml`**: 
+
+This deployment is resposible for deploying the replicaset and the pods of the node application, the container port is set on 3000.
+
+The deployment file has few other parameters
+
+1. `resources:` Because the application is not very heavy and demanding resource wise, i decided to set a limit for each pod so multiple pods can run simultaneously on the same node if necessary, saving money and resources.
+2. `livenessProbe:` This probe continuously checks if the pod is, if a pod is not responding, the **kubelet** get noticed and alert the API server that talks with the Controller Manager to schedule a new pod launch.
+3. `readinessProbe:` This probe checks if a pod is ready to accept traffic, it gives it enough time to initiate before sending traffic to it. if a container fails over the accepted amount of times the container will beexcluded from the Service's endpoints.
+4. `env:` This environment variable gets his value from the configMap we created earlier.
+
+### **`services/service-nodeapp.yml`**: 
+
+This service is an internal service from the **ClusterIP** type and it will only be accessable from inside of the cluster
+
+The `port:` of the service is 80, which means the port is exposed to other services and ingresses on port 80
+The `targetPort:` of the service is 3000, this means the service forward traffic coming from port 80 to port 3000 (Our node application)
+### **`horizontal-nodeapp.yml`**: 
+
+This is yaml file creates a horizontal pod autoscaling based of average CPU utilization if it exceed 70%, a new pod will be scheduled. the minimum number of pods is set to 2 and the maximum to 10 as requested.
+
+### **`ingress/ingress.yml`**: 
+
+on the ingress level we have few main features:
+
+ `annotations:`
+- every HTTP traffic is automatically redirected to HTTPS.
+- every request coming from the website will reach the root (/) when it reachs the backend of the application
+
+every request coming on the host forthebecks.magvonim. will be fowarded to port 80
+
+`tls:`
+-  The tls certificate we will soon create will be placed here
+
+### **`ingress/ingressvalues.yml`**: 
+
+This is the values file of the ingress-ngnix controller we will soon install from helm
+
+in this values file we tell some really important stuff to the controller:
+1.  `podAntiAffinity:` ensures that ingress controller pods are not schuduled on the same node, it's important for high availability and spreading the load across nodes.
+2. `cloud.google.com/load-balancer-type: External:` specifies that the ingress controller's service should be exposed using an external Google Cloud load balancer.
