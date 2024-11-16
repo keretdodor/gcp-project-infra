@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: nodeapp
 spec:
-  replicas: 2
+  replicas: 4
   selector:
     matchLabels:
       app: nodeapp
@@ -47,3 +47,10 @@ spec:
               configMapKeyRef:
                 name: mongodb-config
                 key: MONGO_URI
+        topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: nodeapp
