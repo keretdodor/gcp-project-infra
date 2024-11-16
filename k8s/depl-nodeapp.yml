@@ -47,10 +47,3 @@ spec:
               configMapKeyRef:
                 name: mongodb-config
                 key: MONGO_URI
-        topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: nodeapp
