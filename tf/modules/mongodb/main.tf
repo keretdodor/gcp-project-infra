@@ -140,4 +140,3 @@ resource "null_resource" "initiate_replica_set" {
   depends_on = [google_compute_instance.mongodb_instances, google_compute_firewall.bastion_ssh_firewall]
 
   }
-
