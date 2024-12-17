@@ -1,7 +1,5 @@
-# WideOp's Terraform and GCP Peoject
+# MongoDB replicaset and GKE private cluster.
 
-
-Hey Amir and the rest of the team in WideOps
 I created a highly available and fault tolerant MongoDB replica set and GKE cluster on sperate private subnets providing a secure and isolated environments all using terraform and gcp, and here is how i did it:
 
 ## Terraform Preparations
@@ -37,7 +35,7 @@ I created a highly available and fault tolerant MongoDB replica set and GKE clus
     │   │   │   │   ├── startup-mongo.sh  
     │   │   │   │   └── initiate-mongo.sh 
 
-4. I understand that in production the setup would be different, I planned to create a landing zone that ensures each resource type (MongoDB, GKE, shared VPC) is housed within its own project, ensuring   resource isolation and fine-grained IAM control. This setup would involve creating four dedicated service accounts, each adhering to the least privilege principle for specific roles, and binding each account to the necessary project to enhance security and maintainability.
+4. In production the setup would be different, I planned to create a landing zone that ensures each resource type (MongoDB, GKE, shared VPC) is housed within its own project, ensuring   resource isolation and fine-grained IAM control. This setup would involve creating four dedicated service accounts, each adhering to the least privilege principle for specific roles, and binding each account to the necessary project to enhance security and maintainability.
     
 I understand that in production this is the procedure i would make
 
